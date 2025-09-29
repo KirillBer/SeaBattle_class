@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstdlib>	
 #include <locale>	
-#include "Field.h"	//Библиотека "Поле игры 'Морской бой'"
+//#include "Field.h"	//Библиотека "Поле игры 'Морской бой'"
 #include <vector>	//Для сохранения и отката ходов
 #include <cstring>	//Для работы с файлами
 #include <fstream>	//Для работы с файлами
@@ -940,13 +940,6 @@ class SeaBattleField{
 
 
 
-
-
-
-
-
-
-
 class SeaBattleGame : public SeaBattleField{
 	private:
 		char *FieldSymbol;	//символы отображения клеток во время игры
@@ -966,6 +959,17 @@ class SeaBattleGame : public SeaBattleField{
 			if (FieldSymbol)
 				delete[] FieldSymbol;
 			FieldSymbol = 0;
+		}
+		SeaBattleGame(const SeaBattleGame& other){
+			FieldSymbol = 0;
+			FieldSymbol = new char[5];
+			if (!FieldSymbol)
+				exit(1);
+			FieldSymbol[0] = other.FieldSymbol[0];	//Пустая клетка
+			FieldSymbol[1] = other.FieldSymbol[1];	//Стреленая клетка
+			FieldSymbol[2] = other.FieldSymbol[2];	//Раненая клетка корабля
+			FieldSymbol[3] = other.FieldSymbol[3];	//Клетка взорванного корабля
+			FieldSymbol[4] = other.FieldSymbol[4];	//Целая клетка корабля
 		}
 		char DrawSymbol(unsigned char index){	//Отрисовка элемента index поля, в виде игрового символа
 			unsigned char cell_value = GetValueOfCellByIndex(index);
@@ -1019,8 +1023,11 @@ class SeaBattleGame : public SeaBattleField{
 		}
 		void FullGameTest(){
 			SetShip(4, 2, 0, 0);
+			PrintField();
 			SetShip(3, 2, 0, 2);
+			PrintField();
 			SetShip(3, 3, 5, 0);
+			PrintField();
 			SetShip(2, 2, 0, 4);
 			SetShip(2, 2, GetCols() - 4, 5);
 			SetShip(2, 2, 5, GetRows() - 1);
@@ -1074,16 +1081,6 @@ class SeaBattleGame : public SeaBattleField{
 
 
 
-/*
-Класс реализует хранение и обработку информации об игровом поле одного игрока
-и должен обеспечивать:
-– расстановку кораблей и проверку правильности расстановки;
-– проверку правильности ходов противника, определение их результата и соответствующую обработку ходов;
-– хранение последовательности событий и отмену любого количества ходов;
-– сохранение в поток и загрузку из потока игрового поля и последовательности ходов. 
-*/
-
-
 int main() {
 	setlocale(LC_ALL, "Rus");
 	//SeaBattleGame g(2, 3);
@@ -1091,6 +1088,7 @@ int main() {
 	SeaBattleGame *a, *b;
 	a = new SeaBattleGame;
 	b = new SeaBattleGame;
+	
 	
 	/*
 	a.PrintFieldValues();
@@ -1101,10 +1099,15 @@ int main() {
 	a.GetShipsRemainCountOfNLen(2);
 	a.GetShipsRemainCountOfNLen(3);
 	a.GetShipsRemainCountOfNLen(4);
-	a.PrintChanges();*/
-	//a.FullGameTest();
-	//a.SaveToFile("test1.txt");
+	*/
+	
+	a->FullGameTest();
+	a->PrintChanges();
+	a->PrintField();
+	//a->SaveToFile("test2.txt");
+	//a->SaveToFile();
 	//a.LoadFromFile("test.txt");
+	
 	SeaBattleGame::LoadGameSBF(*a, *b, "test4.txt");
 	
 	//SeaBattleGame::SaveGameSBF(a, b, "test4.txt");
@@ -1112,124 +1115,8 @@ int main() {
 	printf("До\n");
 	a->DebugField();
 	//SeaBattleGame c;
-	SeaBattleGame c = *a;
-
+	SeaBattleGame c;
+	c = *a;
 	
-	
-	
-	printf("\nПосле\n");
-	a->DebugField();
-	printf("\n");
-	c.DebugField();
-	
-	//printf("cols = %d, rows = %d\nfield = %p, fvm = %p\nships = %p, ships_remain = %p\n", c.cols, c.rows, c.field, c.field_value_mean, c.ships, c.ships_remain);
-	printf("test.tx222t\n");
-	//b.PrintField();
-	/*
-	a->PrintField();
-	c.PrintField();
-	c.ShotTo(5, 5);
-	a->PrintField();
-	c.PrintField();
-	*/
-	printf("123\na = %p, b = %p, c = %p\n", a, b, &c);
-	//printf("a: %p, moves a: %p\nc: %p, moves c: %p\n", (void*)&a, (void*)&a.moves, (void*)&c, (void*)&c.moves);
-	printf("a cols: %p, %p, %p\n", &a->cols, &a->ships, &(a->moves));
-	printf("c cols: %p, %p, %p\n", &c.cols, &c.ships, &(c.moves));
-	
-	
-	printf("\n\n\n\n");
-	
-	printf("Object: %p\n", a);
-	printf("cols: %d\nrows: %d, %p %p\n", a->cols, a->rows, &(a->cols), &(a->rows));
-	printf("field: %p\nfield_value_mean: %p\n", a->field, a->field_value_mean);
-	printf("ships: %p\nships_remain: %p\n", &a->ships, &a->ships_remain);
-	printf("moves: %p\n", &(a->moves));
-	
-	
-	printf("\n\n\n\n");
-	
-	printf("Object: %p\n", &c);
-	printf("cols: %d\nrows: %d, %p %p\n", c.cols, c.rows, &c.cols, &c.rows);
-	printf("field: %p\nfield_value_mean: %p\n", c.field, c.field_value_mean);
-	printf("ships: %p\nships_remain: %p\n", c.ships, c.ships_remain);
-	printf("moves: %p\n", &(c.moves));
-	
-	
-	
-	printf("Удаление b: \n");
-	delete b;
-	printf("b удалён\n");
-	printf("Удаление a: \n");
-	delete a;
-	printf("a удалён\n");
-	return 0;
-	//a.PrintField();
-	//a.ShotTo(3, 7);
-	//a.ShotTo(3, 2);
-	//a.PrintField();
-	//a.SetShips();
-	//a.FullGameTest();
-	
-	/*a.SetShip(4, 2, 0, 0);
-	a.SetShip(3, 2, 0, 2);
-	a.SetShip(3, 3, 5, 0);
-	a.SetShip(2, 2, 0, 4);
-	a.SetShip(1, 2, 0, 6);*/
-	/*
-	for(int n = a.GetMaxShipLen(); n > 0; n--)
-		//for(int i = 1; i > 0; i--)
-		for(int i = a.GetShipsCountOfNLen(n); i > 0; i--)
-		{
-			printf("Ставлю корабль длины %d, осталось %d\n", n, i);
-			a.PrintField();
-			while(1)
-			{
-				fflush(stdin);
-				printf("Ошибка установки.\n");
-				printf("x = ");
-				scanf("%d", &x);
-				fflush(stdin);
-				printf("y = ");
-				scanf("%d", &y);
-				printf("Доступны стороны:\n1: %d\n2: %d\n3: %d\n4: %d\n", (a.AvailableSides(x, y, n) / a.IntPow(10, 3))%10, (a.AvailableSides(x, y, n) / a.IntPow(10, 2))%10, (a.AvailableSides(x, y, n) / a.IntPow(10, 1))%10, (a.AvailableSides(x, y, n) / a.IntPow(10, 0))%10);
-				printf("side = ");
-				fflush(stdin);
-				scanf("%d", &side);
-				res = a.SetShip(n, side, x, y);
-				printf("Результат: %d\n", res);
-				if (!res)
-					break;
-			}
-		}
-	*/
-	
-	
-	
-	/*
-	while(1)
-	{
-		fflush(stdin);
-		//a.PrintFieldValues();
-		a.PrintField();
-		printf("Отменить ход?\n0 - да, 1 - нет\n");
-		scanf("%d", &x);
-		if (!x)
-		{
-			printf("Рез. отмены: %d\n", a.CancelLastMove());
-		}
-		else
-		{
-			printf("x = ");
-			scanf("%d", &x);
-			fflush(stdin);
-			printf("y = ");
-			scanf("%d", &y);
-			printf("Результат хода: %d\n", a.ShotTo(x, y));
-		}
-		a.PrintChanges();
-		printf("Кораблей осталось:\n4п - %d\n3п - %d\n2п - %d\n1п - %d\n", a.GetShipsRemainCountOfNLen(4), a.GetShipsRemainCountOfNLen(3), a.GetShipsRemainCountOfNLen(2), a.GetShipsRemainCountOfNLen(1));
-	}
-	*/
 	return 0;
 }
