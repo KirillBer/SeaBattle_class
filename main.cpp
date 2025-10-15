@@ -153,7 +153,7 @@ class SeaBattleField{	//Механика и логика
 				return -1;
 			return field[row_index * rows + col_index];
 		}
-		int GetValueOfValueMean(int type_position){	//Если type_position[0, 4] - вернётся текущее значение типа, иначе вернётся 1111 (невозможное значение)
+		const int GetValueOfValueMean(int type_position) const{	//Если type_position[0, 4] - вернётся текущее значение типа, иначе вернётся 1111 (невозможное значение)
 			if (type_position < 0 || type_position > 4)
 				return 1111;
 			return field_value_mean[type_position];
@@ -191,6 +191,22 @@ class SeaBattleField{	//Механика и логика
 					sum += 1;
 			return sum;
 		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		
 		
 		//Сбросы значений до стандартных
@@ -349,7 +365,7 @@ class SeaBattleField{	//Механика и логика
 	        			result = 5;
 					else if (moves[moves.size() - 1][i].newState == field_value_mean[2])	//Стала STRIKE
 						result = 2;
-					else if (moves[moves.size() - 1][i].prevState == field_value_mean[4])	//Была SHIP
+					else if (moves[moves.size() - 1][i].newState == field_value_mean[3])	//Была SHIP
 					{
 	        			int x = (index % cols), y = (index / cols), side = FindShipEdge(&x, &y), len = CalculateWhatInSide(x, y, side, -1);
 						ships_remain[len] += 1;
@@ -363,7 +379,7 @@ class SeaBattleField{	//Механика и логика
 				return 0;
 			return result;
 		}
-		int CheckLastMove(){ //"Подсмотреть", что делал последний ход; Возвращает то же, что и CancelLastMove()
+		const int CheckLastMove() const{ //"Подсмотреть", что делал последний ход; Возвращает то же, что и CancelLastMove()
 			if (!moves.size())
 				return 0;
 			if (!moves[moves.size() - 1].size())
@@ -372,7 +388,7 @@ class SeaBattleField{	//Механика и логика
 	        	return 5;
 			else if (moves[moves.size() - 1][0].newState == field_value_mean[2])
 				return 2;
-			else if (moves[moves.size() - 1][0].prevState == field_value_mean[4])
+			else if (moves[moves.size() - 1][0].newState == field_value_mean[3])
 				return 3;
 			else
 				return 4;
@@ -952,6 +968,10 @@ class SeaBattleField{	//Механика и логика
 	        	}
 			}
 		}
+		void PrintLastChange(){
+			if (moves[moves.size() - 1].size() > 0)
+				printf("index = %d, prev = %d, new = %d\n", moves[moves.size() - 1][0].coordinate_index, moves[moves.size() - 1][0].prevState, moves[moves.size() - 1][0].newState);
+		}
 		void DebugField(){	//   УДАЛИТЬ 
 			printf("Object: %p\n", this);
 			printf("cols: %p\nrows: %p\n", &cols, &rows);
@@ -959,6 +979,49 @@ class SeaBattleField{	//Механика и логика
 			printf("ships: %p\nships_remain: %p\n", ships, ships_remain);
 			printf("moves: %p\n", &moves);
 		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+			
+	//В SeaBattleField
+		//Добавил PrintLastChange() - только для отладки, будет удалён.
+		//Добавил LookAtCellByIndex()
+		//Исправлены CancelLastMove() и CheckLastMove() для определения взорванного корабля теперь используют newState(3), а не prevState(4)
+		//Изменён GetValueOfValueMean() теперь const
+		//Изменён CheckLastMove() теперь const
+		const int LookAtCellByIndex(int index) const{	//Возвращает хранящееся значение в клетке (при клетке с живым кораблём возвращает значение пустой клетки), иначе -1
+			if (index < 0 || index >= rows * cols)
+				return -1;
+			if (field[index] == field_value_mean[4])
+				return field_value_mean[0];
+			return field[index];
+		}
+	//В SeaBattleGame
+		//Исправлен DrawSymbol() - теперь index типа int, а не unsigned char, а также отработает корректно даже при изменении значений field_value_mean (на что способен класс)
+		
+	//В SeaBattleBot
+		//Добавлены public методы:
+		//void SetBotFieldSize(int new_cols, int new_rows){	//Установить размер поля, в котором бот будет стрелять
+		//void CancelBotMove(){	//Откатить последний ход бота
+		//void ShotByBot(const SeaBattleField &enemy_field, int *x = 0, int *y = 0){ //Вычисления для хода, куда бот будет стрелять; В x и y будут записаны координаты для выстрела;
+		
+		
+		
 };
 
 
@@ -995,8 +1058,19 @@ class SeaBattleGame : public SeaBattleField{	//Интерфейс и реализация игры
 			FieldSymbol[3] = other.FieldSymbol[3];	//Клетка взорванного корабля
 			FieldSymbol[4] = other.FieldSymbol[4];	//Целая клетка корабля
 		}
-		void DrawSymbol(unsigned char index){	//Отрисовка элемента index поля, в виде игрового символа
-			cout << FieldSymbol[GetValueOfCellByIndex(index)];
+		void DrawSymbol(int index){	//Отрисовка элемента index поля, в виде игрового символа
+			unsigned char value = GetValueOfCellByIndex(index);
+			if (value == GetValueOfValueMean(0))
+				cout << FieldSymbol[0];
+			else if (value == GetValueOfValueMean(1))
+				cout << FieldSymbol[1];
+			else if (value == GetValueOfValueMean(2))
+				cout << FieldSymbol[2];
+			else if (value == GetValueOfValueMean(3))
+				cout << FieldSymbol[3];
+			else if (value == GetValueOfValueMean(4))
+				cout << FieldSymbol[4];
+			
 		}
 		void DrawField(){	//Отрисовать 1 поле игровыми символами
 			for(int index = 0; index < GetCols() * GetRows(); index++){
@@ -1035,13 +1109,22 @@ class SeaBattleGame : public SeaBattleField{	//Интерфейс и реализация игры
 			<< "\nSTRIKE - " << GetValueOfValueMean(2) << "\nKILL - " << GetValueOfValueMean(3)
 			<< "\nSHIP - " << GetValueOfValueMean(4) << "\n";
 		}
+		void SetShipsTest(){
+			SetShip(4, 2, 0, 0);
+			SetShip(3, 2, 0, 2);
+			SetShip(3, 3, 5, 0);
+			SetShip(2, 2, 0, 4);
+			SetShip(2, 2, GetCols() - 4, 5);
+			SetShip(2, 2, 5, GetRows() - 1);
+			SetShip(1, 2, 0, 6);
+			SetShip(1, 2, GetCols() - 1, GetRows() - 1);
+			SetShip(1, 2, GetCols() - 1, 0);
+			SetShip(1, 2, GetCols() - 1, 4);
+		}
 		void FullGameTest(){	//Тестовая игра на одном поле
 			SetShip(4, 2, 0, 0);
-			DrawField();
 			SetShip(3, 2, 0, 2);
-			DrawField();
 			SetShip(3, 3, 5, 0);
-			DrawField();
 			SetShip(2, 2, 0, 4);
 			SetShip(2, 2, GetCols() - 4, 5);
 			SetShip(2, 2, 5, GetRows() - 1);
@@ -1093,6 +1176,8 @@ class SeaBattleGame : public SeaBattleField{	//Интерфейс и реализация игры
 		}
 };
 
+
+
 /*
 (Для более подробной информации можно либо плакать, либо искать в самих классах)
 public методы в:
@@ -1140,6 +1225,11 @@ public методы в:
 
 	SeaBattleGame:
 		void DrawSymbol(unsigned char index){	//Отрисовка элемента index поля, в виде игрового символа
+		
+		
+	SeaBattleBot:
+		void SetBotFieldSize(int new_cols, int new_rows){	//Установить размер поля, в котором бот будет стрелять
+		void ShotByBot(const SeaBattleField &enemy_field, int *x = 0, int *y = 0){ //Вычисления для хода, куда бот будет стрелять; В x и y будут записаны координаты для выстрела;
 
 
 
@@ -1163,16 +1253,285 @@ SeaBattleGame:
 	SetShipsRandomly(); //Расставить корабли "случайным" образом
 	
 SeaBattleBot() //Это будет класс со всей логикой бота
-	//Помнит итог последнего хода
-	
-	BotMakeMove(); //Сделать ход
-	ShotLogic(); //Вычисления, куда стрелять
-	
-	
+	SaveBot();	//Сохранить данные бота в файл с полями игры
+	LoadBot();	//Загрузить ланные бота из файла с полями игры
+	CancelBotMove(); //Откатить последний ход бота
 
 (Как называть методы решай сам, я привёл пример. Бота будем в последнюю очередь делать.
 
 */
+
+
+
+class SeaBattleBot : public SeaBattleField{ //Класс со всей логикой бота для игры
+	private:
+		typedef enum BotState{	//Состояние бота
+			Searching,	//В поиске корабля
+			Recognition,//Распознавание свойств корабля (Попал в корабль всего 1 раз)
+			Destruction	//Уничтожение корабля
+		}BotState;
+		typedef enum ShipRotation{	//Ориентация найденного корабля
+			Unknown,	//Неизвестный
+			Horizontal,	//Горизонтальный
+			Vertical	//Dертикальный
+		}ShipRotation;
+		struct MoveResult{	//Результат ходов за время уничтожения корабля
+			int index;
+			int result;
+		};
+		int ef_cols, ef_rows;	//Высота и ширина поля, в которое будет происходить выстрел
+		int LastShotIndex;	//Индекс последнего его хода
+		int LastShotResult;	//Результат последнего его хода
+		int solution; //Решение, куда он будет стрелять
+		int DRTN;	//Номер (индекс хода), после которого стало гарантированно известно направление найденного корабля (direction recognition turn number)
+		BotState State;	//Текущее состояние бота
+		ShipRotation Rotation;	//Ориентация атакуемого корабля
+		vector<MoveResult> moves_;	//Индекс сделанных ходов при уничтожении корабля
+		bool ShootingRight; //Бот для уничтожения движется вправо (вниз), иначе влево (вверх)
+		
+	public:
+		SeaBattleBot(int enemy_field_cols = 10, int enemy_field_rows = 10) : SeaBattleField(enemy_field_cols, enemy_field_rows), ef_cols(GetCols()), ef_rows(GetRows()){
+			LastShotIndex = -1;
+			LastShotResult = -1;
+			solution = -1;
+			DRTN = -1;
+			State = Searching;
+			Rotation = Unknown;
+			ShootingRight = true;
+		}
+		void PrintBotMind(){	//Отладка, позже будет удалено
+			cout << "move_count: " << moves_.size()
+			<< "\nLastShotIndex: " << LastShotIndex
+			<< "\nLastShotResult: " << LastShotResult
+			<< "\nsolution: " << solution
+			<< "\nDRTN: " << DRTN
+			<< "\nState: " << State
+			<< "\nRotation: " << (Rotation == Unknown ? "Unknown" : (Rotation == Horizontal ? "Horizontal" : "Vertical"))
+			<< "\nShootingRight: " << ShootingRight
+			<< endl;
+		}
+	public:
+		void SetBotFieldSize(int new_cols, int new_rows){	//Установить размер поля, в котором бот будет стрелять
+			ef_cols = new_cols;
+			ef_rows = new_rows;
+		}
+	private:
+		void ResetStates(){	//Сбросить состояния по найденному кораблю
+			State = Searching;
+			Rotation = Unknown;
+		}
+		void ResetAboutShipInfo(){	//Сбросить всю информацию по найденному кораблю и ходам
+			ResetStates();
+			ClearMoves();
+			DRTN = -1;
+			ShootingRight = true;
+		}
+		void ClearMoves(){	//Очистить список сделанных ходов
+			while(moves_.size() > 0)
+				moves_.pop_back();
+		}
+		void AddMove(int index, int move_result){	//Добавить сделанный ботом ход
+			MoveResult t_move;
+			t_move.index = index;
+			t_move.result = move_result;
+			moves_.push_back(t_move);
+		}
+	public:
+		void CancelBotMove(){	//Откатить последний ход бота
+			
+		}
+	private:
+		void ChangeLastMove(int new_value){
+			moves_[moves_.size() - 1].result = new_value;
+		}
+		void ReverseShootingSide(){	//Развернуть уничтожение корабля на противоположную сторону
+			if (ShootingRight)
+				solution = (Rotation == Vertical ? moves_[0].index - ef_cols : moves_[0].index - 1);	//Выстрелить левее (выше) первой найденной клетки
+			else
+				solution = (Rotation == Vertical ? moves_[0].index + ef_cols : moves_[0].index + 1);	//Выстрелить правее (ниже) первой найденной клетки
+			ShootingRight = !ShootingRight;
+		}
+		bool IsInField(int index){	//В пределах ли поля для стрельбы координата; false - нет; true - да
+			return !(index < 0 || index > (ef_cols * ef_rows - 1));
+		}
+		bool IsInFieldHorizontal(int x, int y){	//В пределах ли поля для стрельбы координата; false - нет; true - да
+			return !((x < 0 || x >= ef_cols) || (y < 0 || y >= ef_rows));
+		}
+		bool IsMayShotTo(const SeaBattleField &enemy_field, int index){	//Имеет ли смысл выстрела по данному индексу; false - нет; true - да
+			return (IsInField(index) && (CheckCell(enemy_field, index) == 0));
+		}
+		bool IsMayShotToHorizontal(const SeaBattleField &enemy_field, int x, int y){	//Имеет ли смысл выстрела по данной координате; false - нет; true - да
+			return CheckCellHorizontal(enemy_field, x, y) == 0;
+		}
+		int CheckCell(const SeaBattleField &enemy_field, int index){	//-1 - за пределами поля; 0 - пустота (или, возможно, корабль); 1 - стреленая клетка; 2 - раненый корабль; 3 - взорванный корабль
+			int value = enemy_field.LookAtCellByIndex(index);
+			if (enemy_field.GetValueOfValueMean(0) == value)
+				return 0;
+			else if (enemy_field.GetValueOfValueMean(1) == value)
+				return 1;
+			else if (enemy_field.GetValueOfValueMean(2) == value)
+				return 2;
+			else if (enemy_field.GetValueOfValueMean(3) == value)
+				return 3;
+			else
+				return -1;
+		}
+		int CheckCellHorizontal(const SeaBattleField &enemy_field, int x, int y){
+			if (!IsInFieldHorizontal(x, y))
+				return -1;
+			int index = y * ef_cols + x;
+			int value = enemy_field.LookAtCellByIndex(index);
+			if (enemy_field.GetValueOfValueMean(0) == value)
+				return 0;
+			else if (enemy_field.GetValueOfValueMean(1) == value)
+				return 1;
+			else if (enemy_field.GetValueOfValueMean(2) == value)
+				return 2;
+			else if (enemy_field.GetValueOfValueMean(3) == value)
+				return 3;
+			else
+				return -1;
+		}
+		int FindOutShipRotation(const SeaBattleField &enemy_field){	//Узнать ориентацию найденного корабля; 0 - не удалось, 1 - узнал без определения координаты для выстрела; 2 в процессе определения; 3 - узнал и определил координату для выстрела
+			int  Up = moves_[0].index - ef_cols, Down = moves_[0].index + ef_cols, Right = (moves_[0].index % ef_cols) + 1, Left = (moves_[0].index % ef_cols) - 1, y = moves_[0].index / ef_cols;	//Следующие ближайшие клетки в каждом направлении
+			cout << "Moves_[0], up, down, left, right " << (moves_[0].index) << Up << Down << Left << Right << endl;
+			if (CheckCell(enemy_field, Up) == 2 || CheckCell(enemy_field, Down) == 2){	//Если выше или ниже был ранен корабль
+				Rotation = Vertical;
+				cout << "Выше или ниже есть раненый корабль\n";
+				return 1;
+			}
+			else
+				if (!(IsMayShotTo(enemy_field, Up) || IsMayShotTo(enemy_field, Down))){	//Может ли выстрелить выше/ниже
+					Rotation = Horizontal;
+					cout << "Не могу выстрелить выше/ниже\nЗначения верха и низа: ";
+					cout << CheckCell(enemy_field, Up) << CheckCell(enemy_field, Down) << endl;
+					cout << "IsMayShotTo Верх и низ: " << IsMayShotTo(enemy_field, Up) << IsMayShotTo(enemy_field, Down) << endl;
+					return 1;
+				}
+		
+			if (CheckCellHorizontal(enemy_field, Left, y) == 2 || CheckCellHorizontal(enemy_field, Right, y) == 2){	//Если левее или правее был ранен корабль
+				Rotation = Horizontal;
+				cout << "Левее или правее есть раненый корабль\n";
+				return 1;
+			}	
+			else
+				if (!(IsMayShotToHorizontal(enemy_field, Left, y) || IsMayShotToHorizontal(enemy_field, Right, y))){	//Может ли выстрелить левее/правее
+					Rotation = Vertical;
+					cout << "Не могу выстрелить левее/правее\n";
+					return 1;
+				}
+			
+			if (IsMayShotTo(enemy_field, Down)){
+				ShootingRight = true;
+				solution = Down;
+			}
+			else if (IsMayShotTo(enemy_field, Up)){
+				ShootingRight = false;
+				solution = Up;
+			}
+			else if (IsMayShotToHorizontal(enemy_field, Right, y)){
+				ShootingRight = true;
+				solution = y * ef_cols + Right;
+			}
+			else if (IsMayShotToHorizontal(enemy_field, Left, y)){
+				solution = y * ef_cols + Left;
+				ShootingRight = false;
+			}
+			
+			if (Rotation == Unknown)
+				return 2;
+			else
+				return 3;
+		}
+		void RecordBotMoveData(int *x = 0, int *y = 0){	//Записать в переданные аргументы значения от solution
+			if (x)
+				*x = solution % ef_cols;
+			if (y)
+				*y = solution / ef_cols;
+			LastShotIndex = solution;
+		}
+	public:
+		void ShotByBot(const SeaBattleField &enemy_field, int *x = 0, int *y = 0){ //Вычисления для хода, куда бот будет стрелять; В x и y будут записаны координаты для выстрела;
+			int temp = 0, temp2;
+			LastShotResult = enemy_field.CheckLastMove();
+			switch(LastShotResult){	//Результат его последнего хода
+				case 2:	//Попал в клетку корабля
+					if (State == Searching){	//Только-только обнаружил корабль
+						AddMove(LastShotIndex, LastShotResult);
+						State = Destruction;
+					}
+
+					break;
+				case 3:	//Взорвал корабль
+					ResetAboutShipInfo();
+					break;
+				case 4:	//Попал по пустой клетке
+					
+					break;
+				case 5:	//Была установка кораблей, это первый ход
+					solution = 56;
+					RecordBotMoveData(x, y);
+					return;
+			}
+			switch(State){
+				case Searching:	//Поиск какого-либо корабля
+				
+				
+					//Заглушка. Идёт от конца массива до начала по каждой клетке
+					for(solution = ef_cols * ef_rows - 1; solution >= 0; solution--){
+						if (CheckCell(enemy_field, solution) == 0){
+							RecordBotMoveData(x, y);
+							return;
+						}
+					}
+					break;
+				case Destruction:	//Уничтожение найденного корабля
+					if (Rotation == Unknown){	//Попытка узнать направление корабля
+						temp = FindOutShipRotation(enemy_field);
+						if (temp == 1){
+							DRTN = moves_.size() - 1;
+						}
+						else if (temp == 2){
+							RecordBotMoveData(x, y);
+							AddMove(LastShotIndex, -1);
+							return;
+						}
+						else if (temp == 3){
+							RecordBotMoveData(x, y);
+							DRTN = moves_.size() - 1;
+							return;
+						}
+						//ChangeLastMove(LastShotResult);
+					}
+					else
+						AddMove(LastShotIndex, LastShotResult);
+					
+					
+					//cout << "LSIndex, solution temp перед Rotation: " << LastShotIndex << " " << solution << " " << temp << endl;
+					
+					if (Rotation == Horizontal){
+						temp2 = (LastShotResult == 2 ? (LastShotIndex / ef_cols) : (moves_[0].index / ef_cols));
+						solution = ((LastShotResult == 2 ? (LastShotIndex % ef_cols) : (moves_[0].index % ef_cols)) + (ShootingRight ? 1 : -1));
+					}
+					else	//Rotation == Vertical
+						solution = ((LastShotResult == 2 ? LastShotIndex : moves_[0].index) + (ShootingRight ? ef_cols : -ef_cols));
+					
+					
+					//cout << "LSIndex, solution temp перед проверкой: " << LastShotIndex << " " << solution << " " << temp << endl;
+					//cout << (!IsMayShotToHorizontal(enemy_field, solution, (LastShotResult == 2 ? (LastShotIndex / ef_cols) : (moves_[0].index / ef_cols)))) << endl;
+					if ((LastShotResult == 4 && temp == 0) || (Rotation == Horizontal ? (!IsMayShotToHorizontal(enemy_field, solution, temp2)) : (!IsMayShotTo(enemy_field, solution))))	//Попал в пустую клетку или следующая клетка вне поля поля/не имеет смысла в неё стрелять
+						ReverseShootingSide();
+					else
+						solution = (Rotation == Horizontal ? temp2 * ef_cols + solution : solution);
+					
+					
+					//cout << "LSIndex, solution temp после проверки: " << LastShotIndex << " " << solution << " " << temp << endl;
+					
+					RecordBotMoveData(x, y);
+					break;
+			}
+		}
+};
 
 int main() {
 	setlocale(LC_ALL, "Rus");
@@ -1180,6 +1539,24 @@ int main() {
 	a = new SeaBattleGame;	//Аналогично a = new SeaBattleGame(10, 10)
 	b = new SeaBattleGame;	//Аналогично b = new SeaBattleGame(10, 10)
 	//SeaBattleGame::LoadGameSBF(*a, *b, "test4.txt");	//Загрузка из файла
+	SeaBattleBot c;
+	a->SetShipsTest();
+	int x = 0, y = 0;
+	c.PrintBotMind();
+	a->DrawField();
+	for(int i = 0; i < 80; i++){
+		a->DrawField();
+		c.ShotByBot(*a, &x, &y);
+		printf("Бот решил стрелять в x: %d, y: %d\n", x, y);
+		printf("Итог выстрела: %d\n", a->ShotTo(x, y));
+		//c.PrintBotMind();
+		a->PrintLastChange();
+		cout << "\n||||||||||||||||||||||||||||\n\n\n";
+		
+		
+		
+		
+	}
 
 	return 0;
 }
