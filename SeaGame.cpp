@@ -14,7 +14,7 @@ using namespace std;
 class SeaBattleField;
 
 
-class SeaBattleField{	//Механика и логика
+class SeaBattleField{	//Механика и логика поля и кораблей
 		//Обозначения: EMPTY, SHOT, STRIKE, KILL, SHIP
 	private:	//Значения
 		struct CellValueChange{	//Хранение изменения состояния клетки при ходе
@@ -145,7 +145,7 @@ class SeaBattleField{	//Механика и логика
 		int GetCols(){	//Возвращает значение cols
 			return cols;
 		}
-		int GetValueOfValueMean(int type_position){	//Если type_position[0, 4] - вернётся текущее значение типа, иначе вернётся 1111 (невозможное значение)
+		const int GetValueOfValueMean(int type_position) const{	//Если type_position[0, 4] - вернётся текущее значение типа, иначе вернётся 1111 (невозможное значение)
 			if (type_position < 0 || type_position > 4)
 				return 1111;
 			return field_value_mean[type_position];
@@ -182,6 +182,13 @@ class SeaBattleField{	//Механика и логика
 				if (field[i] == field_value_mean[4] || field[i] == field_value_mean[2])
 					sum += 1;
 			return sum;
+		}
+		const int LookAtCellByIndex(int index) const{	//Возвращает хранящееся значение в клетке (при клетке с живым кораблём возвращает значение пустой клетки), иначе -1
+			if (index < 0 || index >= rows * cols)
+				return -1;
+			if (field[index] == field_value_mean[4])
+				return field_value_mean[0];
+			return field[index];
 		}
 	protected:
 		int GetValueOfCellByIndex(int index){	//Возвращает хранящееся значение в клетке, иначе -1
@@ -352,7 +359,7 @@ class SeaBattleField{	//Механика и логика
 	        			result = 5;
 					else if (moves[moves.size() - 1][i].newState == field_value_mean[2])	//Стала STRIKE
 						result = 2;
-					else if (moves[moves.size() - 1][i].prevState == field_value_mean[4])	//Была SHIP
+					else if (moves[moves.size() - 1][i].newState == field_value_mean[3])	//Была SHIP
 					{
 	        			int x = (index % cols), y = (index / cols), side = FindShipEdge(&x, &y), len = CalculateWhatInSide(x, y, side, -1);
 						ships_remain[len] += 1;
@@ -366,7 +373,7 @@ class SeaBattleField{	//Механика и логика
 				return 0;
 			return result;
 		}
-		int CheckLastMove(){ //"Подсмотреть", что делал последний ход; Возвращает то же, что и CancelLastMove()
+		const int CheckLastMove() const{ //"Подсмотреть", что делал последний ход; Возвращает то же, что и CancelLastMove()
 			if (!moves.size())
 				return 0;
 			if (!moves[moves.size() - 1].size())
@@ -375,7 +382,7 @@ class SeaBattleField{	//Механика и логика
 	        	return 5;
 			else if (moves[moves.size() - 1][0].newState == field_value_mean[2])
 				return 2;
-			else if (moves[moves.size() - 1][0].prevState == field_value_mean[4])
+			else if (moves[moves.size() - 1][0].newState == field_value_mean[3])
 				return 3;
 			else
 				return 4;
@@ -620,13 +627,133 @@ class SeaBattleField{	//Механика и логика
 		
 		//Запись в файл
 	public:
+		/*
 		static int SaveGameSBF(SeaBattleField &field_1, SeaBattleField &field_2, const char *file_name){	//Сохранение в файл; те же, что и в SaveToFile
 			ofstream file(file_name);	//Открываем файл для записи
 			field_1.SaveToFile(file);
 			field_2.SaveToFile(file);
 		}
+		*/
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		bool HaveFormatInName(string file_name, string file_format = ".txt"){
+			if (file_name.length() < 4)
+				return false;
+			return file_name.compare(file_name.length() - 4, 4, file_format) == 0;
+		}
+		
+		
+		
+		int SaveToFile(string file_name, bool append = false){	//Сохранение в файл; 0 - успешно; 1 - некорректное название/ошибка открытия файла; 2 - ошибка записи
+			if (file_name.length() < 3)
+				return 1;
+			if (!HaveFormatInName(file_name, ".txt"))
+				file_name += ".txt";
+			/*
+			//Основные флаги режима открытия:
+			std::ios::in        // Для чтения
+			std::ios::out       // Для записи  
+			std::ios::binary    // Бинарный режим
+			std::ios::trunc     // Усечь файл до нуля (перезапись)
+			std::ios::app       // Добавление в конец (append)
+			std::ios::ate       // Открыть и перейти в конец файла
+			
+			//Комбинации:
+			std::ios::out | std::ios::trunc    // Перезапись (по умолчанию для ofstream)
+			std::ios::out | std::ios::app      // Добавление в конец
+			std::ios::in | std::ios::out       // Чтение и запись
+			*/
+			
+			ofstream file(file_name.c_str(), (append ? ios::app : ios::trunc));	//Открываем файл для записи
+			if (!file.is_open())
+				return 1;
+			cout << "Начало записи\n";
+			if	(
+				!RecordString(file, (append ? "SeaBattleField2\n" : "SeaBattleField1\n")) ||
+				!RecordElement(file, "c", cols) ||
+				!RecordElement(file, "r", rows) ||
+				!RecordArray(file, "f", field, cols * rows) ||
+				!RecordArray(file, "fvm", field_value_mean, 5) ||
+				!RecordArray(file, "s", ships, ships[0] + 1) ||
+				!RecordArray(file, "sr", ships_remain, ships_remain[0] + 1) ||
+				!RecordMoves(file)
+				){	//Ошибка записи
+				file.clear();	//Сбросить состояние записи
+				cout << "Ошибка записи\n";
+			}
+			else	//Успешная запись
+				cout << "Успешная запись\n";
+			return 0;
+			
+		}
 	private:
-		int SaveToFile(ofstream &record_file){	//Сохранение в файл; 0 - успешно; 1 - ошибка открытия файла; 2X - ошибка записи (X - код ошибки)
+		bool RecordString(ofstream &flow_name, string your_string){	//Записать в файл строку; true - успешно; false - ошибка записи
+			//cout << "RecordString\n";
+			return (flow_name << your_string).good();
+		}
+		bool RecordNumber(ofstream &flow_name, int number){	//Записать в файл число; true - успешно; false - ошибка записи
+			//cout << "RecordNumber\n";
+			return (flow_name << number).good();
+		}
+		bool RecordElement(ofstream &flow_name, string element_name, int number){	//Записать в файл элемент полностью; true - успешно; false - ошибка записи
+			//cout << "RecordElement\n";
+			return (flow_name << element_name << "=\"" << number << "\"\n").good();
+		}
+		bool RecordArray(ofstream &flow_name, string element_name, unsigned char *array, int array_size){	//Записать в файл массив в скобках; true - успешно; false - ошибка записи
+			//cout << "RecordArray\n";
+			flow_name << element_name << "=(" << array_size;
+			for(int i = 0; i < array_size; i++)
+				flow_name << " " << ((int)array[i]);
+			flow_name << ")\n";
+			return flow_name.good();
+		}
+		bool RecordMoves(ofstream &flow_name){	//Записать в файл ходы; true - успешно; false - ошибка записи
+			if (!RecordElement(flow_name, "m", moves.size()))
+				return false;
+			for(int i = 0; i < moves.size(); i++){
+				if (!RecordNumber(flow_name, moves[i].size()))
+					return false;
+				if (moves[i].size())
+					flow_name << " (";
+				for(int n = 0; n < moves[i].size(); n++){
+					RecordNumber(flow_name, moves[i][n].coordinate_index);
+					flow_name << ' ';
+					RecordNumber(flow_name, moves[i][n].prevState);
+					flow_name << ' ';
+					RecordNumber(flow_name, moves[i][n].newState);
+					if (n < moves[i].size() - 1)
+						flow_name << ", ";
+				}
+				if (moves[i].size())
+					flow_name << ')';
+				flow_name << '\n';
+				if (!flow_name.good())
+					return false;
+			}
+			return flow_name.good();
+		}
+		
+		/*
+		int PreviousSaveToFile(ofstream &record_file){	//Сохранение в файл; 0 - успешно; 1 - ошибка открытия файла; 2X - ошибка записи (X - код ошибки)
 			if (record_file.is_open())
 			{
 				if (RecordItem(record_file, cols, " ") || RecordItem(record_file, rows, "\n"))
@@ -707,7 +834,7 @@ class SeaBattleField{	//Механика и логика
 			}
 			return 0;
 		}
-		
+		*/
 		
 		//Работа с кораблями
 	private:
@@ -948,22 +1075,223 @@ class SeaBattleField{	//Механика и логика
 		
 		//Для отрисовки
 	public:				//ВРЕМЕННО СУЩЕСТВУЮТ МЕТОДЫ!!!!!!!!!!!!!!!!!!!
+		void PrintLastChange(){
+			if (moves[moves.size() - 1].size() > 0)
+				printf("index = %d, prev = %d, new = %d\n", moves[moves.size() - 1][0].coordinate_index, moves[moves.size() - 1][0].prevState, moves[moves.size() - 1][0].newState);
+		}
 		void PrintChanges(){	//Отобразить все ходы и изменения, происходящие в них
 			for(int n = 0, moves_count = (moves.size() - 1); n <= moves_count; n++)
 			{
 				printf("    moves[%d]\n", n);
 				for (int i = 0, size = (moves[n].size() - 1); i <= size; i++){
 	            	printf("index = %d, prev = %d, new = %d\n", moves[n][i].coordinate_index, moves[n][i].prevState, moves[n][i].newState);
+	            	
 	        	}
+	        	if (n % 100 == 0)
+	            	system("pause");
 			}
 		}
 		void DebugField(){	//   УДАЛИТЬ 
 			printf("Object: %p\n", this);
-			printf("cols: %p\nrows: %p\n", &cols, &rows);
+			printf("cols: %p, %d\nrows: %p, %d\n", &cols, cols, &rows, rows);
 			printf("field: %p\nfield_value_mean: %p\n", field, field_value_mean);
+			for(int i = 0; i < 5; i++)
+				cout << ((int)field_value_mean[i]) << " ";
+			cout << endl;
 			printf("ships: %p\nships_remain: %p\n", ships, ships_remain);
+			for(int i = 0; i < ships[0]; i++)
+				cout << ((int)ships[i]) << " ";
+			cout << endl;
 			printf("moves: %p\n", &moves);
 		}
+
+
+
+
+
+
+
+
+
+			/*	
+			//Основные флаги режима открытия:
+			std::ios::in        // Для чтения
+			std::ios::out       // Для записи  
+			std::ios::binary    // Бинарный режим
+			std::ios::trunc     // Усечь файл до нуля (перезапись)
+			std::ios::app       // Добавление в конец (append)
+			std::ios::ate       // Открыть и перейти в конец файла
+			
+			//Комбинации:
+			std::ios::out | std::ios::trunc    // Перезапись (по умолчанию для ofstream)
+			std::ios::out | std::ios::app      // Добавление в конец
+			std::ios::in | std::ios::out       // Чтение и запись
+			*/
+
+
+		public:
+    // Метод для сохранения в бинарный файл
+    bool saveToFile(const std::string& filename, bool append = false){	//Сохранить в файл; true - успешно; false - ошибка записи
+        std::ofstream file(filename, std::ios::binary | (append ? ios::app : ios::trunc));
+        if (!file.is_open())
+			return false;
+		printf("Пошёл записывать\n");
+		
+		//Записываем размер всей записи класса (с этим же числом включительно)
+		size_t record_size = SizeForSave();
+    	file.write(reinterpret_cast<const char*>(&record_size), sizeof(record_size));
+    	
+        //Записываем размеры поля
+        file.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
+        file.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
+
+        //Записываем массивы field, field_value_mean, ships, ships_remain
+        file.write(reinterpret_cast<const char*>(field), cols * rows);
+        file.write(reinterpret_cast<const char*>(field_value_mean), 5);
+        
+        //Для ships и ships_remain: сначала длину, потом данные
+        unsigned char ships_length = ships[0] + 1; // +1 потому что ships[0] хранит максимальную длину
+        file.write(reinterpret_cast<const char*>(&ships_length), sizeof(ships_length));
+        file.write(reinterpret_cast<const char*>(ships), ships_length);
+        
+        file.write(reinterpret_cast<const char*>(&ships_length), sizeof(ships_length));
+        file.write(reinterpret_cast<const char*>(ships_remain), ships_length);
+
+        //Записываем moves
+        size_t moves_count = moves.size();
+        file.write(reinterpret_cast<const char*>(&moves_count), sizeof(moves_count));
+        
+        for (const auto &move : moves){
+            size_t changes_count = move.size();
+            file.write(reinterpret_cast<const char*>(&changes_count), sizeof(changes_count));
+            
+            for (const auto &change : move){
+                file.write(reinterpret_cast<const char*>(&change.coordinate_index), sizeof(change.coordinate_index));
+                file.write(reinterpret_cast<const char*>(&change.prevState), sizeof(change.prevState));
+                file.write(reinterpret_cast<const char*>(&change.newState), sizeof(change.newState));
+            }
+        }
+		printf("Сохранил? %d\n", file.good());
+        return file.good();
+    }
+    size_t SizeForSave(){	//Возвращает размер класса в байтах для хранения в файле
+		size_t size = sizeof(size_t);
+    
+	    size += sizeof(cols) + sizeof(rows);			//размеры поля
+	    size += cols * rows;							//field
+	    size += 5;										//field_value_mean
+	    size += sizeof(unsigned char) * (ships[0] + 1);	//ships
+	    size += sizeof(unsigned char) * (ships[0] + 1);	//ships_remain
+	    
+	    size += sizeof(size_t);							//moves.size()
+	    for (const auto &move : moves){					//moves[n].size()
+	    	/**
+			for (size_t i = 0; i < moves.size(); i++){
+                file.read(reinterpret_cast<char*>(&moves[i][j].coordinate_index), sizeof(moves[i][j].coordinate_index));
+                file.read(reinterpret_cast<char*>(&moves[i][j].prevState), sizeof(moves[i][j].prevState));
+                file.read(reinterpret_cast<char*>(&moves[i][j].newState), sizeof(moves[i][j].newState));
+            }
+            */
+	        size += (sizeof(size_t) + move.size() * (sizeof(int) + sizeof(unsigned char) + sizeof(unsigned char)));	//coordinate_index, prevState, newState
+	    }
+	    
+	    return size;
+	}
+
+    // Метод для загрузки из бинарного файла
+    bool loadFromFile(const std::string& filename, bool second_field = false){	//Загрузка из файла; true - успешно; false - ошибка записи
+        std::ifstream file(filename, std::ios::binary);
+        if (!file.is_open())
+			return false;
+		
+		cout << "Начал\n";
+		
+		size_t record_size;
+		
+		file.read(reinterpret_cast<char*>(&record_size), sizeof(record_size));	//Читаем размер объекта в файле
+		if (second_field){
+			file.seekg(record_size, std::ios::beg);	//Пропускаем первую запись по её размеру из файла
+	        file.read(reinterpret_cast<char*>(&record_size), sizeof(record_size));	//Читаем размер записи, но не используем его для пропуска
+	    }
+	    
+	    
+	    
+	    
+	    
+	    
+        //Освобождаем существующие ресурсы
+        cleanup();
+
+        //Читаем размеры поля
+        file.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+        file.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+
+        //Выделяем память для массивов
+        size_t field_size = cols * rows;
+        field = new unsigned char[field_size];
+        field_value_mean = new unsigned char[5];
+
+        //Читаем массивы field и field_value_mean
+        file.read(reinterpret_cast<char*>(field), field_size);
+        file.read(reinterpret_cast<char*>(field_value_mean), 5);
+        
+        //printf("F0 и 99: %d, %d\n", field[0], field[99]);
+        //printf("FVM: %d, %d, %d, %d, %d\n", field_value_mean[0], field_value_mean[1], field_value_mean[2], field_value_mean[3], field_value_mean[4]);
+
+        //Читаем ships
+        unsigned char ships_length;
+        file.read(reinterpret_cast<char*>(&ships_length), sizeof(ships_length));
+        ships = new unsigned char[ships_length];
+        file.read(reinterpret_cast<char*>(ships), ships_length);
+
+        //Читаем ships_remain
+        file.read(reinterpret_cast<char*>(&ships_length), sizeof(ships_length));
+        ships_remain = new unsigned char[ships_length];
+        file.read(reinterpret_cast<char*>(ships_remain), ships_length);
+        
+        
+        
+        //printf("ships Максимальная длина: %d. %d, %d, %d, %d\n", ships[0], ships[1], ships[2], ships[3], ships[4], ships[5]);
+        //printf("ships_remain Максимальная длина: %d. %d, %d, %d, %d\n", ships_remain[0], ships_remain[1], ships_remain[2], ships_remain[3], ships_remain[4], ships_remain[5]);
+
+        //Читаем moves
+        size_t moves_count;
+        file.read(reinterpret_cast<char*>(&moves_count), sizeof(moves_count));
+        moves.resize(moves_count);
+
+		printf("moves.size() = %d\n", moves_count);
+        for (size_t i = 0; i < moves_count; i++){
+            size_t changes_count;
+            file.read(reinterpret_cast<char*>(&changes_count), sizeof(changes_count));
+            moves[i].resize(changes_count);
+
+            for (size_t j = 0; j < changes_count; j++){
+                file.read(reinterpret_cast<char*>(&moves[i][j].coordinate_index), sizeof(moves[i][j].coordinate_index));
+                file.read(reinterpret_cast<char*>(&moves[i][j].prevState), sizeof(moves[i][j].prevState));
+                file.read(reinterpret_cast<char*>(&moves[i][j].newState), sizeof(moves[i][j].newState));
+            }
+        }
+
+        return file.good();
+    }
+
+private:
+    void cleanup() {
+        delete[] field;
+        delete[] field_value_mean;
+        delete[] ships;
+        delete[] ships_remain;
+        moves.clear();
+    }
+
+
+
+
+
+
+
+
+
 };
 
 
@@ -1001,10 +1329,27 @@ class SeaBattleGame : public SeaBattleField //Интерфейс и реализация игры
 			FieldSymbol[3] = other.FieldSymbol[3];	//Клетка взорванного корабля
 			FieldSymbol[4] = other.FieldSymbol[4];	//Целая клетка корабля
 		}
-		void DrawSymbol(unsigned char index){	//Отрисовка элемента index поля, в виде игрового символа
-			cout << FieldSymbol[GetValueOfCellByIndex(index)];
+		void PrintColored(const string& text, int color) {
+	        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	        SetConsoleTextAttribute(hConsole, color + 1);
+	        cout << text;
+	        SetConsoleTextAttribute(hConsole, 7);
+    	}
+		void DrawSymbol(int index){	//Отрисовка элемента index поля, в виде игрового символа
+			unsigned char value = GetValueOfCellByIndex(index);
+			string myString(1, FieldSymbol[0]);
+			if (value == GetValueOfValueMean(0))
+				PrintColored(myString, 5);
+				//cout << FieldSymbol[0];
+			else if (value == GetValueOfValueMean(1))
+				cout << FieldSymbol[1];
+			else if (value == GetValueOfValueMean(2))
+				cout << FieldSymbol[2];
+			else if (value == GetValueOfValueMean(3))
+				cout << FieldSymbol[3];
+			else if (value == GetValueOfValueMean(4))
+				cout << FieldSymbol[4];
 		}
-		
 		void DrawFields(SeaBattleGame &enemy_field) 
 		{
 	        int y;
@@ -1106,7 +1451,7 @@ class SeaBattleGame : public SeaBattleField //Интерфейс и реализация игры
 		{
 	        ClearField();
 	        ResetShipsRemain();
-	        srand(time(NULL)); // инициализация генератора
+	        srand(clock()); // инициализация генератора
 	        
 	        int max_len = GetMaxShipLen();
 	        for (int len = max_len; len >= 1; len--) 
@@ -1159,6 +1504,75 @@ class SeaBattleGame : public SeaBattleField //Интерфейс и реализация игры
 	        }
 	        return result;
 	    }
+	
+	
+	//Будет удалено
+	public:
+		void SetShipsTest(){
+			SetShip(4, 2, 0, 0);
+			SetShip(3, 2, 0, 2);
+			SetShip(3, 3, 5, 0);
+			SetShip(2, 2, 0, 4);
+			SetShip(2, 2, GetCols() - 4, 5);
+			SetShip(2, 2, 5, GetRows() - 1);
+			SetShip(1, 2, 0, 6);
+			SetShip(1, 2, GetCols() - 1, GetRows() - 1);
+			SetShip(1, 2, GetCols() - 1, 0);
+			SetShip(1, 2, GetCols() - 1, 4);
+		}
+		void FullGameTest(){	//Тестовая игра на одном поле
+			SetShip(4, 2, 0, 0);
+			SetShip(3, 2, 0, 2);
+			SetShip(3, 3, 5, 0);
+			SetShip(2, 2, 0, 4);
+			SetShip(2, 2, GetCols() - 4, 5);
+			SetShip(2, 2, 5, GetRows() - 1);
+			SetShip(1, 2, 0, 6);
+			SetShip(1, 2, GetCols() - 1, GetRows() - 1);
+			SetShip(1, 2, GetCols() - 1, 0);
+			SetShip(1, 2, GetCols() - 1, 4);
+			
+			ShotTo(0, 0);
+			ShotTo(1, 0);
+			ShotTo(2, 0);
+			ShotTo(3, 0);
+			
+			ShotTo(0, 2);
+			ShotTo(1, 2);
+			ShotTo(2, 2);
+			
+			ShotTo(0, 4);
+			ShotTo(1, 4);
+			
+			ShotTo(0, 6);
+			
+			ShotTo(5, 0);
+			ShotTo(5, 2);
+			ShotTo(5, 1);
+			
+			ShotTo(-1, 2);
+			ShotTo(1, -2);
+			ShotTo(1, 3);
+			ShotTo(4, 2);
+			ShotTo(6, 6);
+			ShotTo(1, 7);
+			ShotTo(7, 5);
+			ShotTo(1, 9);
+			ShotTo(10, 2);
+			ShotTo(1, 10);
+			
+			ShotTo(GetCols() - 1, 0);
+			
+			ShotTo(GetCols() - 1, GetRows() - 1);
+			
+			ShotTo(GetCols() - 1, 4);
+			
+			ShotTo(6, 5);
+			ShotTo(7, 5);
+			
+			ShotTo(5, GetRows() - 1);
+			ShotTo(6, GetRows() - 1);
+		}
 };
 
 
@@ -1741,14 +2155,15 @@ private:
             info_file.close();
         }
         
-        // Сохраняем саму игру
+        // Сохраняем саму игру (ЗдесьСохранение)
+        /*
         if (SeaBattleField::SaveGameSBF(player1, player2, filename.c_str()) == 0) // c_str - возвращает указатель на char (const char*)
 		{
             cout << "Игра успешно сохранена в файл: " << filename << endl;
         } else {
             cout << "Ошибка при сохранении игры!" << endl;
         }
-        
+        */
         system("pause");
     }
     
@@ -1881,12 +2296,411 @@ private:
 };
 
 
+
+
+
+
+
+
+
+/* public методы SeaBattleBot
+
+*/
+
+
+
+class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
+	private:
+		typedef enum BotState{	//Состояние бота
+			Searching,	//В поиске корабля
+			Recognition,//Распознавание свойств корабля (Попал в корабль всего 1 раз)
+			Destruction	//Уничтожение корабля
+		}BotState;
+		typedef enum ShipRotation{	//Ориентация найденного корабля
+			Unknown,	//Неизвестный
+			Horizontal,	//Горизонтальный
+			Vertical	//Dертикальный
+		}ShipRotation;
+		struct MoveResult{	//Результат ходов за время уничтожения корабля
+			int index;
+			int result;
+		};
+		int ef_cols, ef_rows;	//Высота и ширина поля, в которое будет происходить выстрел
+		int LastShotIndex;	//Индекс последнего его хода
+		int LastShotResult;	//Результат последнего его хода
+		int solution; //Решение, куда он будет стрелять
+		int DRTN;	//Номер (индекс хода), после которого стало гарантированно известно направление найденного корабля (direction recognition turn number)
+		BotState State;	//Текущее состояние бота
+		ShipRotation Rotation;	//Ориентация атакуемого корабля
+		vector<MoveResult> moves_;	//Индекс сделанных ходов при уничтожении корабля
+		bool ShootingRight; //Бот для уничтожения движется вправо (вниз), иначе влево (вверх)
+		
+	public:
+		SeaBattleBot(int enemy_field_cols = 10, int enemy_field_rows = 10) : SeaBattleGame(enemy_field_cols, enemy_field_rows), ef_cols(GetCols()), ef_rows(GetRows()){
+			LastShotIndex = -1;
+			LastShotResult = -1;
+			solution = -1;
+			DRTN = -1;
+			State = Searching;
+			Rotation = Unknown;
+			ShootingRight = true;
+		}
+		void PrintBotMind(){	//Отладка, позже будет удалено
+			cout << "move_count: " << moves_.size()
+			<< "\nLastShotIndex: " << LastShotIndex
+			<< "\nLastShotResult: " << LastShotResult
+			<< "\nsolution: " << solution
+			<< "\nDRTN: " << DRTN
+			<< "\nState: " << State
+			<< "\nRotation: " << (Rotation == Unknown ? "Unknown" : (Rotation == Horizontal ? "Horizontal" : "Vertical"))
+			<< "\nShootingRight: " << ShootingRight
+			<< endl;
+		}
+	public:
+		void SetBotFieldSize(int new_cols, int new_rows){	//Установить размер поля, в котором бот будет стрелять
+			if (new_cols > 0 && new_cols < 2000000000)
+				ef_cols = new_cols;
+			else
+				ef_cols = GetCols();
+			if (new_rows > 0 && new_rows < 2000000000)
+				ef_rows = new_rows;
+			else
+				ef_rows = GetRows();
+		}
+		void ResetBot(int cols = -1, int rows = -1){
+			SetBotFieldSize(cols, rows);
+			LastShotIndex = -1;
+			LastShotResult = -1;
+			solution = -1;
+			DRTN = -1;
+			State = Searching;
+			ResetAboutShipInfo();
+			ClearMoves();
+			
+			
+			int ef_cols, ef_rows;	//Высота и ширина поля, в которое будет происходить выстрел
+			int LastShotIndex;	//Индекс последнего его хода
+			int LastShotResult;	//Результат последнего его хода
+			int solution; //Решение, куда он будет стрелять
+			int DRTN;	//Номер (индекс хода), после которого стало гарантированно известно направление найденного корабля (direction recognition turn number)
+			BotState State;	//Текущее состояние бота
+			ShipRotation Rotation;	//Ориентация атакуемого корабля
+			bool ShootingRight;	//Для уничтожения корабля стреляет вправо
+			vector<MoveResult> moves_;	//Индекс сделанных ходов при уничтожении корабля
+		}
+	private:
+		void ResetAboutShipInfo(){	//Сбросить всю информацию по найденному кораблю
+			Rotation = Unknown;
+			ShootingRight = true;
+		}
+		void ClearMoves(){	//Очистить список сделанных ходов
+			while(moves_.size() > 0)
+				moves_.pop_back();
+		}
+		void AddMove(int index, int move_result){	//Добавить сделанный ботом ход
+			MoveResult t_move;
+			t_move.index = index;
+			t_move.result = move_result;
+			moves_.push_back(t_move);
+		}
+	public:
+		void CancelBotMove(){	//Откатить последний ход бота
+			//CancelLastMove();	//Откатывает изменения за последний ход; Возвращает: 0 - ходы отсутствуют; 1 - был выстрел по SHOT, STRIKE, KILL; 2 - было попадание в SHIP; 3 - был подрыв корабля; 4 - был выстрел по EMPTY; 5 - была установка корабля;
+			
+		}
+	private:
+		void ChangeLastMove(int new_value){
+			moves_[moves_.size() - 1].result = new_value;
+		}
+		void ReverseShootingSide(){	//Развернуть уничтожение корабля на противоположную сторону
+			if (ShootingRight)
+				solution = (Rotation == Vertical ? moves_[0].index - ef_cols : moves_[0].index - 1);	//Выстрелить левее (выше) первой найденной клетки
+			else
+				solution = (Rotation == Vertical ? moves_[0].index + ef_cols : moves_[0].index + 1);	//Выстрелить правее (ниже) первой найденной клетки
+			ShootingRight = !ShootingRight;
+		}
+		bool IsInField(int index){	//В пределах ли поля для стрельбы координата; false - нет; true - да
+			return !(index < 0 || index >= (ef_cols * ef_rows));
+		}
+		bool IsInFieldHorizontal(int x, int y){	//В пределах ли поля для стрельбы координата; false - нет; true - да
+			return !((x < 0 || x >= ef_cols) || (y < 0 || y >= ef_rows));
+		}
+		bool IsMayShotTo(const SeaBattleField &enemy_field, int index){	//Имеет ли смысл выстрела по данному индексу; false - нет; true - да
+			return (IsInField(index) && (CheckCell(enemy_field, index) == 0));
+		}
+		bool IsMayShotToHorizontal(const SeaBattleField &enemy_field, int x, int y){	//Имеет ли смысл выстрела по данной координате; false - нет; true - да
+			return CheckCellHorizontal(enemy_field, x, y) == 0;
+		}
+		int CheckCell(const SeaBattleField &enemy_field, int index){	//-1 - за пределами поля; 0 - пустота (или, возможно, корабль); 1 - стреленая клетка; 2 - раненый корабль; 3 - взорванный корабль
+			int value = enemy_field.LookAtCellByIndex(index);
+			if (enemy_field.GetValueOfValueMean(0) == value)
+				return 0;
+			else if (enemy_field.GetValueOfValueMean(1) == value)
+				return 1;
+			else if (enemy_field.GetValueOfValueMean(2) == value)
+				return 2;
+			else if (enemy_field.GetValueOfValueMean(3) == value)
+				return 3;
+			else
+				return -1;
+		}
+		int CheckCellHorizontal(const SeaBattleField &enemy_field, int x, int y){
+			if (!IsInFieldHorizontal(x, y))
+				return -1;
+			int index = y * ef_cols + x;
+			int value = enemy_field.LookAtCellByIndex(index);
+			if (enemy_field.GetValueOfValueMean(0) == value)
+				return 0;
+			else if (enemy_field.GetValueOfValueMean(1) == value)
+				return 1;
+			else if (enemy_field.GetValueOfValueMean(2) == value)
+				return 2;
+			else if (enemy_field.GetValueOfValueMean(3) == value)
+				return 3;
+			else
+				return -1;
+		}
+		int FindOutShipRotation(const SeaBattleField &enemy_field){	//Узнать ориентацию найденного корабля; 0 - не удалось, 1 - узнал без определения координаты для выстрела; 2 в процессе определения; 3 - узнал и определил координату для выстрела
+			int  Up = moves_[0].index - ef_cols, Down = moves_[0].index + ef_cols, Right = (moves_[0].index % ef_cols) + 1, Left = (moves_[0].index % ef_cols) - 1, y = moves_[0].index / ef_cols;	//Следующие ближайшие клетки в каждом направлении
+			cout << "Moves_[0], up, down, left, right " << (moves_[0].index) << Up << Down << Left << Right << endl;
+			if (CheckCell(enemy_field, Up) == 2 || CheckCell(enemy_field, Down) == 2){	//Если выше или ниже был ранен корабль
+				Rotation = Vertical;
+				cout << "Выше или ниже есть раненый корабль\n";
+				return 1;
+			}
+			else
+				if (!(IsMayShotTo(enemy_field, Up) || IsMayShotTo(enemy_field, Down))){	//Может ли выстрелить выше/ниже
+					Rotation = Horizontal;
+					cout << "Не могу выстрелить выше/ниже\nЗначения верха и низа: ";
+					cout << CheckCell(enemy_field, Up) << CheckCell(enemy_field, Down) << endl;
+					cout << "IsMayShotTo Верх и низ: " << IsMayShotTo(enemy_field, Up) << IsMayShotTo(enemy_field, Down) << endl;
+					return 1;
+				}
+		
+			if (CheckCellHorizontal(enemy_field, Left, y) == 2 || CheckCellHorizontal(enemy_field, Right, y) == 2){	//Если левее или правее был ранен корабль
+				Rotation = Horizontal;
+				cout << "Левее или правее есть раненый корабль\n";
+				return 1;
+			}	
+			else
+				if (!(IsMayShotToHorizontal(enemy_field, Left, y) || IsMayShotToHorizontal(enemy_field, Right, y))){	//Может ли выстрелить левее/правее
+					Rotation = Vertical;
+					cout << "Не могу выстрелить левее/правее\n";
+					return 1;
+				}
+			
+			if (IsMayShotTo(enemy_field, Down)){
+				ShootingRight = true;
+				solution = Down;
+			}
+			else if (IsMayShotTo(enemy_field, Up)){
+				ShootingRight = false;
+				solution = Up;
+			}
+			else if (IsMayShotToHorizontal(enemy_field, Right, y)){
+				ShootingRight = true;
+				solution = y * ef_cols + Right;
+			}
+			else if (IsMayShotToHorizontal(enemy_field, Left, y)){
+				solution = y * ef_cols + Left;
+				ShootingRight = false;
+			}
+			
+			if (Rotation == Unknown)
+				return 2;
+			else
+				return 3;
+		}
+		void RecordBotMoveData(int *x = 0, int *y = 0){	//Записать в переданные аргументы значения от solution
+			if (x)
+				*x = solution % ef_cols;
+			if (y)
+				*y = solution / ef_cols;
+			LastShotIndex = solution;
+		}
+	public:
+		void ShotByBot(SeaBattleField &enemy_field, int *x = 0, int *y = 0){ //Вычисления для хода, куда бот будет стрелять; В x и y будут записаны координаты для выстрела;
+			int temp = 0, temp2;
+			LastShotResult = enemy_field.CheckLastMove();	//0 - ходы отсутствуют; 1 - был выстрел по SHOT, STRIKE, KILL; 2 - было попадание в SHIP; 3 - был подрыв корабля; 4 - был выстрел по EMPTY; 5 - была установка корабля;
+			switch(LastShotResult){	//Результат его последнего хода
+				case 2:	//Попал в клетку корабля
+					if (State == Searching){	//Только-только обнаружил корабль
+						AddMove(LastShotIndex, LastShotResult);
+						State = Destruction;
+					}
+
+					break;
+				case 3:	//Взорвал корабль
+					ResetAboutShipInfo();
+					State = Searching;
+					break;
+				case 4:	//Попал по пустой клетке
+					
+					break;
+				/*
+				case 5:	//Была установка кораблей, это первый ход
+					solution = 0;
+					RecordBotMoveData(x, y);
+					return;
+				*/
+			}
+			switch(State){
+				case Searching:	//Поиск какого-либо корабля
+					
+					/*
+					//Заглушка. Идёт от конца массива до начала по каждой клетке
+					for(solution = ef_cols * ef_rows - 1; solution >= 0; solution--){
+						if (CheckCell(enemy_field, solution) == 0){
+							RecordBotMoveData(x, y);
+							return;
+						}
+					}
+					break;
+					*/
+					srand(clock());
+					temp = rand();
+					srand(clock() + 1);
+					solution = (((unsigned int)temp) + rand() % (ef_cols * ef_rows));
+					for(int i = 0; i <= ef_cols * ef_rows; solution++, i++){
+						if (solution >= ef_cols * ef_rows)
+							solution = 0;
+						if (CheckCell(enemy_field, solution) == 0)	//Чтобы выстрелить в пустую клетку
+							break;
+					}
+					RecordBotMoveData(x, y);
+					break;
+				case Destruction:	//Уничтожение найденного корабля
+					if (Rotation == Unknown){	//Попытка узнать направление корабля
+						temp = FindOutShipRotation(enemy_field);
+						if (temp == 1){
+							DRTN = moves_.size() - 1;
+						}
+						else if (temp == 2){
+							RecordBotMoveData(x, y);
+							AddMove(LastShotIndex, -1);
+							return;
+						}
+						else if (temp == 3){
+							RecordBotMoveData(x, y);
+							DRTN = moves_.size() - 1;
+							return;
+						}
+						//ChangeLastMove(LastShotResult);
+					}
+					else
+						AddMove(LastShotIndex, LastShotResult);
+					
+					
+					//cout << "LSIndex, solution temp перед Rotation: " << LastShotIndex << " " << solution << " " << temp << endl;
+					
+					if (Rotation == Horizontal){
+						temp2 = (LastShotResult == 2 ? (LastShotIndex / ef_cols) : (moves_[0].index / ef_cols));
+						solution = ((LastShotResult == 2 ? (LastShotIndex % ef_cols) : (moves_[0].index % ef_cols)) + (ShootingRight ? 1 : -1));
+					}
+					else	//Rotation == Vertical
+						solution = ((LastShotResult == 2 ? LastShotIndex : moves_[0].index) + (ShootingRight ? ef_cols : -ef_cols));
+					
+					
+					//cout << "LSIndex, solution temp перед проверкой: " << LastShotIndex << " " << solution << " " << temp << endl;
+					//cout << (!IsMayShotToHorizontal(enemy_field, solution, (LastShotResult == 2 ? (LastShotIndex / ef_cols) : (moves_[0].index / ef_cols)))) << endl;
+					if ((LastShotResult == 4 && temp == 0) || (Rotation == Horizontal ? (!IsMayShotToHorizontal(enemy_field, solution, temp2)) : (!IsMayShotTo(enemy_field, solution))))	//Попал в пустую клетку или следующая клетка вне поля поля/не имеет смысла в неё стрелять
+						ReverseShootingSide();
+					else
+						solution = (Rotation == Horizontal ? temp2 * ef_cols + solution : solution);
+					
+					
+					//cout << "LSIndex, solution temp после проверки: " << LastShotIndex << " " << solution << " " << temp << endl;
+					
+					RecordBotMoveData(x, y);
+					break;
+			}
+		}
+		void BotSaveToFile(){
+			
+		}
+};
+
+
+
+
+
+
+
 int main() {
 	setlocale(LC_ALL, "Rus");
+	//Где сломал работу: (ЗдесьСохранение)
+	//SeaBattleGameMenu menu;
+    //menu.Run();
+	SeaBattleGame *a, *b, *c;	//Аналогично a(10, 10), b(10, 10)
+	a = new SeaBattleGame;	//Аналогично a = new SeaBattleGame(10, 10)
+	b = new SeaBattleGame(3, 5);	//Аналогично b = new SeaBattleGame(10, 10)
+	c = new SeaBattleGame;
+	//SeaBattleField::LoadGameSBF(*a, *b, "test4.txt");	
+	//Текстовый файл
 	
-	SeaBattleGameMenu menu;
-    menu.Run();
+	string str1 = "test7.txt";
+	c->FullGameTest();
+	c->DrawField();
+	c->SaveToFile(str1);	//Сохранение в файл
+	b->SaveToFile(str1, true);	//Сохранение в файл
+	//c->LoadFromFile(strt);	//Загрузка из файла
+	c->DrawField();
+	c->PrintChanges();
 	
+	return 0;
+	
+	
+	printf("\n\n\n\n\nБитовый файл\n\n\n\n");
+	//Битовый файл. Не работает
+	string str = "text6.bin";
+	a->ChangeFieldValueMean(250,  200, 150, 100, 0);
+	a->FullGameTest();
+	cout << str << endl;
+	a->saveToFile(str);	//Сохранение в файл
+	b->saveToFile(str, true);	//Сохранение в файл
+	cout << "Готов?\n";
+	system("pause");
+	a->loadFromFile(str);	//Загрузка из файла
+	cout << "Вторая загрузка\n";
+	b->loadFromFile(str, true);	//Загрузка из файла
+	//a->SaveToFile(str, true);
+	b->ShotTo(2, 2);
+	printf("a Shot result: %d\n", a->ShotTo(1, 1));
+	//printf("b Shot result: %d\n", b->ShotTo(2, 2));
+	printf("b Shot result: %d\n", b->ShotTo(0, 0));
+	a->DrawField();
+	b->DrawField();
+	b->PrintFieldValues();
+	a->DebugField();
+	b->DebugField();
+	
+	a->PrintChanges();
+	b->PrintChanges();
+	
+	
+	
+	return 0;
+	/*
+	SeaBattleBot c;
+	a->SetShipsTest();
+	int x = 0, y = 0;
+	c.PrintBotMind();
+	a->DrawField();
+	cout << "\n||||||||||||||||||||||||||||\n\n\n";
+	while(a->CheckLastMove() != 1){
+		//a->DrawField();
+		c.ShotByBot(*a, &x, &y);
+		printf("Бот решил стрелять в x: %d, y: %d\n", x, y);
+		printf("Итог выстрела: %d\n", a->ShotTo(x, y));
+		a->PrintLastChange();
+		//c.PrintBotMind();
+		cout << "\n||||||||||||||||||||||||||||\n\n\n";
+		
+		
+		
+		
+	}
 
+	*/
 	return 0;
 }
