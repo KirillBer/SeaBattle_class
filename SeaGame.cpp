@@ -449,11 +449,10 @@ class SeaBattleField{	//Механика и логика поля и кораблей
 			std::ios::out | std::ios::app      // Добавление в конец
 			std::ios::in | std::ios::out       // Чтение и запись
 			*/
-			SeaBattleField temp(1, 1);	//Временный объект, в который изначально будут загружаться данные
 			ifstream file(file_name.c_str());	//Открываем файл для записи
 			if (!file.is_open())
 				return 1;
-			cout << "Начало записи\n";
+			cout << "Начало чтения\n";
 			if	(
 				!ReadFindString(file, (is_it_second_field ? "SeaBattleField2" : "SeaBattleField1")) ||
 				!ReadElement(file, "c", &cols) ||
@@ -461,6 +460,7 @@ class SeaBattleField{	//Механика и логика поля и кораблей
 				!ReadArray(file, "fvm", &field_value_mean) ||
 				!ReadArray(file, "s", &ships) ||
 				!ReadArray(file, "sr", &ships_remain) ||
+				!ReadMoves(file) ||
 				//!ReadElement(file, "m", &moves_count) ||
 				//!RecordMoves(file)
 				0
@@ -470,11 +470,18 @@ class SeaBattleField{	//Механика и логика поля и кораблей
 			}
 			else	//Успешное чтение
 				cout << "Успешное чтение\n";
-			cout << "cols = " << cols << ", rows = " << rows << endl;
+			RegenerateFieldByMoves();
 			return 0;
 			
 		}
 	private:
+		bool RegenerateFieldByMoves(){	//Восстановить поле по ходам
+			for(int i = 0; i < moves.size(); i++){
+				for(int n = 0; n < moves[i].size(); n++){
+					field[moves[i][n].coordinate_index] = moves[i][n].newState;
+				}
+			}
+		}
 		bool ReadFindString(ifstream &flow_name, string your_string){	//Найти строку в файле; true - удалось; false - не удалось
 			string str;
 			int i = 0;
@@ -523,10 +530,35 @@ class SeaBattleField{	//Механика и логика поля и кораблей
 				return false;
 			return true;
 		}
+		bool ReadChar(ifstream &flow_name, unsigned char *element){	//Считать из файла символ; true - успешно; false - ошибка чтения
+			*element = (flow_name.get() - '0');
+			return !(flow_name.fail() || flow_name.eof());
+		}
 		bool ReadNumber(ifstream &flow_name, int *element){	//Считать из файла элемент в кавычках; true - успешно; false - ошибка чтения
 			return (flow_name >> *element).good();
 		}
-		
+		bool ReadMoves(ifstream &flow_name){	//Считать из файла ходы; true - успешно; false - ошибка чтения
+			int moves_size, moves_i_size, index;
+			if (!ReadIsStringEquals(flow_name, "m=\"") || !ReadNumber(flow_name, &moves_size) || !ReadIsCharEqualsReaded(flow_name, '"') || !ReadIsCharEqualsReaded(flow_name, '\n'))
+				return false;
+			cout << "Количество ходов: " << moves_size << endl;
+			unsigned char pr_st, ne_st;
+			for(int i = 0; i < moves_size; i++){
+				MakeMove();
+				if (!ReadNumber(flow_name, &moves_i_size) || !ReadIsCharEqualsReaded(flow_name, ' '))
+					return false;
+				for(int n = 0; n < moves_i_size; n++){
+					if (!ReadNumber(flow_name, &index) || !ReadIsCharEqualsReaded(flow_name, ' ') || !ReadChar(flow_name, &pr_st) || !ReadChar(flow_name, &ne_st))
+							return false;
+					if (pr_st > 4 || ne_st > 4)
+							return false;
+					pr_st = field_value_mean[pr_st];
+					ne_st = field_value_mean[ne_st];
+					AddCellValueChange(index, pr_st, ne_st);
+				}
+			}
+			return true;
+		}
 		/*
 		int LoadFromFile(ifstream &read_file){	//Загрузка из файла; 0 - успешно; 1 - ошибка открытия файла / выделения памяти; 2 - ошибка считывания данных; 3 - ошибка значения данных в файле
 			//ifstream read_file(char_file_name);	//Открываем файл для чтения
@@ -1246,6 +1278,7 @@ class SeaBattleField{	//Механика и логика поля и кораблей
 
 
 		public:
+/*
     // Метод для сохранения в бинарный файл
     bool saveToFile(const std::string& filename, bool append = false){	//Сохранить в файл; true - успешно; false - ошибка записи
         std::ofstream file(filename, std::ios::binary | (append ? ios::app : ios::trunc));
@@ -1301,13 +1334,12 @@ class SeaBattleField{	//Механика и логика поля и кораблей
 	    
 	    size += sizeof(size_t);							//moves.size()
 	    for (const auto &move : moves){					//moves[n].size()
-	    	/**
-			for (size_t i = 0; i < moves.size(); i++){
-                file.read(reinterpret_cast<char*>(&moves[i][j].coordinate_index), sizeof(moves[i][j].coordinate_index));
-                file.read(reinterpret_cast<char*>(&moves[i][j].prevState), sizeof(moves[i][j].prevState));
-                file.read(reinterpret_cast<char*>(&moves[i][j].newState), sizeof(moves[i][j].newState));
-            }
-            */
+	    	
+			//for (size_t i = 0; i < moves.size(); i++){
+            //    file.read(reinterpret_cast<char*>(&moves[i][j].coordinate_index), sizeof(moves[i][j].coordinate_index));
+            //    file.read(reinterpret_cast<char*>(&moves[i][j].prevState), sizeof(moves[i][j].prevState));
+            //    file.read(reinterpret_cast<char*>(&moves[i][j].newState), sizeof(moves[i][j].newState));
+            //}
 	        size += (sizeof(size_t) + move.size() * (sizeof(int) + sizeof(unsigned char) + sizeof(unsigned char)));	//coordinate_index, prevState, newState
 	    }
 	    
@@ -1399,7 +1431,7 @@ private:
         delete[] ships_remain;
         moves.clear();
     }
-
+*/
 
 
 
@@ -2770,7 +2802,7 @@ int main() {
 		//b = new SeaBattleGame(3, 5);	//Аналогично b = new SeaBattleGame(10, 10)
 		//c = new SeaBattleGame;
 		b = new SeaBattleGame(2, 3);
-		c = new SeaBattleGame(4, 5);
+	 	c = new SeaBattleGame(4, 5);
 		
 		int temp = 1;	//0 - сохранение; 1 - загрузка
 		//SeaBattleField::LoadGameSBF(*a, *b, "test4.txt");	
@@ -2796,7 +2828,7 @@ int main() {
 		
 		return 0;
 		
-		
+		/*
 		printf("\n\n\n\n\nБитовый файл\n\n\n\n");
 		//Битовый файл. Не работает
 		string str = "text6.bin";
@@ -2824,7 +2856,7 @@ int main() {
 		a->PrintChanges();
 		b->PrintChanges();
 		
-		
+		*/
 		
 		return 0;
 	}
