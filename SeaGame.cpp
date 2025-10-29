@@ -2254,7 +2254,7 @@ private:
 
 class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 	private:
-	public:
+	public:	//(УДАЛИТЬ) должно быть private
 		typedef enum BotState{	//Состояние бота
 			Searching,	//В поиске корабля
 			Destruction	//Уничтожение корабля
@@ -2283,7 +2283,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			FirstHitIndex = -1;
 			ShootingRight = true;
 		}
-		void PrintBotMind(){	//Отладка, позже будет удалено
+		void PrintBotMind(){	//(УДАЛИТЬ) Отладка, позже будет удалено
 			cout << "\nState: " << State
 			<< "\nLastShotIndex: " << LastShotIndex
 			<< "\nLastShotResult: " << LastShotResult
@@ -2292,6 +2292,14 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			<< "\nFirstHitIndex: " << FirstHitIndex
 			<< "\nShootingRight: " << ShootingRight
 			<< endl;
+		}
+	
+	//Изменение данных бота
+	private:
+		void ResetAboutShipInfo(){	//Сбросить всю информацию по найденному кораблю
+			Rotation = Unknown;
+			ShootingRight = true;
+			FirstHitIndex = -1;
 		}
 	public:
 		void SetBotFieldSize(int new_cols, int new_rows){	//Установить размер поля, в котором бот будет стрелять
@@ -2304,7 +2312,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			else
 				ef_rows = GetRows();
 		}
-		void ResetBot(int cols_ = -1, int rows_ = -1){
+		void ResetBot(int cols_ = -1, int rows_ = -1){	//Сбросить всю игровую информацию бота
 			SetBotFieldSize(cols_, rows_);
 			LastShotIndex = -1;
 			LastShotResult = -1;
@@ -2313,30 +2321,19 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			ResetAboutShipInfo();
 			FirstHitIndex = -1;
 		}
+	
+	//Работа с клетками/значениями клеток поля
 	private:
-		void ResetAboutShipInfo(){	//Сбросить всю информацию по найденному кораблю
-			Rotation = Unknown;
-			ShootingRight = true;
-			FirstHitIndex = -1;
-		}
-	private:
-		void ReverseShootingSide(){	//Развернуть уничтожение корабля на противоположную сторону
-			if (ShootingRight)
-				solution = (Rotation == Vertical ? FirstHitIndex - ef_cols : FirstHitIndex - 1);	//Выстрелить левее (выше) первой найденной клетки
-			else
-				solution = (Rotation == Vertical ? FirstHitIndex + ef_cols : FirstHitIndex + 1);	//Выстрелить правее (ниже) первой найденной клетки
-			ShootingRight = !ShootingRight;
-		}
-		bool IsInField(int index){	//В пределах ли поля для стрельбы координата; false - нет; true - да
+		bool IsInField(int index){	//В пределах ли поля для стрельбы координата; true - да; false - нет
 			return !(index < 0 || index >= (ef_cols * ef_rows));
 		}
-		bool IsInFieldHorizontal(int x, int y){	//В пределах ли поля для стрельбы координата; false - нет; true - да
+		bool IsInFieldHorizontal(int x, int y){	//В пределах ли поля для стрельбы координата; true - да; false - нет
 			return !((x < 0 || x >= ef_cols) || (y < 0 || y >= ef_rows));
 		}
-		bool IsMayShotTo(const SeaBattleField &enemy_field, int index){	//Имеет ли смысл выстрела по данному индексу; false - нет; true - да
+		bool IsMayShotTo(const SeaBattleField &enemy_field, int index){	//Имеет ли смысл выстрела по данному индексу; true - да; false - нет
 			return (IsInField(index) && (CheckCell(enemy_field, index) == 0));
 		}
-		bool IsMayShotToHorizontal(const SeaBattleField &enemy_field, int x, int y){	//Имеет ли смысл выстрела по данной координате; false - нет; true - да
+		bool IsMayShotToHorizontal(const SeaBattleField &enemy_field, int x, int y){	//Имеет ли смысл выстрела по данной координате; true - да; false - нет
 			return CheckCellHorizontal(enemy_field, x, y) == 0;
 		}
 		int CheckCell(const SeaBattleField &enemy_field, int index){	//-1 - за пределами поля; 0 - пустота (или, возможно, корабль); 1 - стреленая клетка; 2 - раненый корабль; 3 - взорванный корабль
@@ -2352,7 +2349,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			else
 				return -1;
 		}
-		int CheckCellHorizontal(const SeaBattleField &enemy_field, int x, int y){
+		int CheckCellHorizontal(const SeaBattleField &enemy_field, int x, int y){	//-1 - за пределами поля; 0 - пустота (или, возможно, корабль); 1 - стреленая клетка; 2 - раненый корабль; 3 - взорванный корабль
 			if (!IsInFieldHorizontal(x, y))
 				return -1;
 			int index = y * ef_cols + x;
@@ -2367,6 +2364,16 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 				return 3;
 			else
 				return -1;
+		}
+	
+	//Определение координаты для уничтожения корабля
+	private:
+		void ReverseShootingSide(){	//Развернуть уничтожение корабля на противоположную сторону
+			if (ShootingRight)
+				solution = (Rotation == Vertical ? FirstHitIndex - ef_cols : FirstHitIndex - 1);	//Выстрелить левее (выше) первой найденной клетки
+			else
+				solution = (Rotation == Vertical ? FirstHitIndex + ef_cols : FirstHitIndex + 1);	//Выстрелить правее (ниже) первой найденной клетки
+			ShootingRight = !ShootingRight;
 		}
 		int FindOutShipRotation(const SeaBattleField &enemy_field){	//Узнать ориентацию найденного корабля; 1 - узнал ориентацию; 2 в процессе определения
 			int  Up = FirstHitIndex - ef_cols, Down = FirstHitIndex + ef_cols, Right = (FirstHitIndex % ef_cols) + 1, Left = (FirstHitIndex % ef_cols) - 1, y = FirstHitIndex / ef_cols;	//Следующие ближайшие клетки в каждом направлении
@@ -2492,12 +2499,17 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			}
 			RecordBotMoveData(x, y);
 		}
-		
+	
+	
+	//Работа с файлами
+	private:
 		bool HaveFormatInFileName(string file_name, string file_format = ".txt"){
 			if (file_name.length() < 4)
 				return false;
 			return file_name.compare(file_name.length() - 4, 4, file_format) == 0;
 		}
+	//Загрузка из файла
+	public:
 		bool BotLoadFromFile(string file_name){	//Загрузить данные бота из файла; 0 - успешно; 1 - некорректное название/ошибка открытия файла; 2 - ошибка чтения
 			if (file_name.length() < 3)
 				return 1;
@@ -2507,36 +2519,33 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			ifstream file(file_name.c_str());	//Открываем файл для чтения
 			if (!file.is_open())
 				return 1;
+			
 			ResetBot();
-			int temp;
-			int shr;
+			int temp, shr;
 			if (
 				!BotReadFindString(file, "SeaBattleBot") ||
 				!BotReadElement(file, "efc", &ef_cols) ||
 				!BotReadElement(file, "efr", &ef_rows) ||
 				!BotReadElement(file, "sta", &temp)
-				){	//Ошибка чтения
-					cout << "Ошибка чтения Бота\n";
+				)	//Ошибка чтения
 					return 2;
-				}
+			
 			State = (BotState)temp;
-			if (State == Destruction){	//Если бот в состоянии уничтожения корабля
+			if (State == Destruction)	//Если бот в состоянии уничтожения корабля
 				if (
 					!BotReadElement(file, "lsi", &LastShotIndex) ||
 					!BotReadElement(file, "lsr", &LastShotResult) ||
 					!BotReadElement(file, "rot", &temp) ||
 					!BotReadElement(file, "fhi", &FirstHitIndex) ||
 					!BotReadElement(file, "shr", &shr)
-					){	//Ошибка чтения
-						cout << "Ошибка чтения Бота\n";
+					)	//Ошибка чтения
 						return 2;
-					}
-			}
+			
 			Rotation = (ShipRotation)temp;
 			ShootingRight = (bool)shr;
-			cout << "Успешное чтение Бота\n";
 			return 0;
 		}
+	private:
 		bool BotReadFindString(ifstream &flow_name, string your_string){	//Найти строку в файле; true - удалось; false - не удалось
 			string str;
 			while (getline(flow_name, str)){
@@ -2551,10 +2560,9 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			return (flow_name.get() == your_char);
 		}
 		bool BotReadIsStringEquals(ifstream &flow_name, string your_string){	//Совпадает ли ожидаемое имя элемента со считанным; true - совпадает; false - не совпадает
-			for(int i = 0; i < your_string.length(); i++){
+			for(int i = 0; i < your_string.length(); i++)
 				if (your_string[i] != flow_name.get())
 					return false;
-			}
 			return true;
 		}
 		bool BotReadElement(ifstream &flow_name, string element_name, int *element){	//Считать из файла элемент в кавычках; true - успешно; false - ошибка чтения
@@ -2565,6 +2573,8 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 		bool BotReadNumber(ifstream &flow_name, int *element){	//Считать из файла элемент в кавычках; true - успешно; false - ошибка чтения
 			return (flow_name >> *element).good();
 		}
+	//Сохранение в файл
+	public:
 		bool BotSaveToFile(string file_name){	//Сохранить данные бота в файл
 			if (file_name.length() < 3)
 				return 1;
@@ -2598,12 +2608,11 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			cout << "Успешная запись Бота\n";
 			return 0;
 		}
+	private:
 		bool BotRecordString(ofstream &flow_name, string your_string){	//Записать в файл строку; true - успешно; false - ошибка записи
-			//cout << "RecordString\n";
 			return (flow_name << your_string).good();
 		}
 		bool BotRecordElement(ofstream &flow_name, string element_name, int number){	//Записать в файл элемент в кавычки; true - успешно; false - ошибка записи
-			//cout << "RecordElement\n";
 			return (flow_name << element_name << "=\"" << number << "\"\n").good();
 		}
 };
@@ -2628,10 +2637,13 @@ SeaBattleField
 int main() {
 	setlocale(LC_ALL, "Rus");
 	//Где сломал работу: (ЗдесьСохранение)  (ЗдесьЗагрузка)
+	//Что надо будет удалить (УДАЛИТЬ)
 	//SeaBattleGameMenu menu;
     //menu.Run();
     if (0){	//0 - бот (игра, сохранение и загрузка), 1 - поле (сохранение и загрузка)
 		int temp = 1;	//0 - сохранение; 1 - загрузка
+		
+		
 		SeaBattleGame *a, *b, *c;	//Аналогично a(10, 10), b(10, 10)
 		a = new SeaBattleGame;	//Аналогично a = new SeaBattleGame(10, 10)
 		b = new SeaBattleGame(3, 5);	//Аналогично b = new SeaBattleGame(10, 10)
@@ -2668,6 +2680,9 @@ int main() {
 		return 0;
 	}
 	else{
+		int test_mode = 0;	//0 - игра; 1 - сохранение; 2 - загрузка
+		
+		
 		SeaBattleGame *a, *b;	//Аналогично a(10, 10), b(10, 10)
 		a = new SeaBattleGame;	//Аналогично a = new SeaBattleGame(10, 10)
 		SeaBattleBot c;
@@ -2677,12 +2692,7 @@ int main() {
 		//a->DrawField();
 		int i = 0;
 		string file_name = "test8";
-		
-		
-		int test_mode = 0;	//0 - игра; 1 - сохранение; 2 - загрузка
-		
-		
-		printf("Размер поля: %d x %d\n", c.GetCols(), c.GetRows());
+		printf("Размер поля: %dx%d\n", c.GetCols(), c.GetRows());
 		cout << "\n||||||||||||||||||||||||||||\n\n\n";
 		if (test_mode == 2){
 			a->LoadFromFile(file_name);
