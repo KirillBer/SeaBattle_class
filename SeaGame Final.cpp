@@ -1215,7 +1215,9 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 		ShipRotation Rotation;	//Ориентация атакуемого корабля
 		int FirstHitIndex;	//Индекс клетки с первым попаданием по кораблю
 		bool ShootingRight; //Бот для уничтожения движется вправо (вниз), иначе влево (вверх)
-		
+		int *EmptyCells;
+		int EmptyCellsSize;
+				
 	public:
 		SeaBattleBot(int enemy_field_cols = 10, int enemy_field_rows = 10) : SeaBattleGame(enemy_field_cols, enemy_field_rows), ef_cols(GetCols()), ef_rows(GetRows()){
 			State = Searching;
@@ -1225,8 +1227,13 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			Rotation = Unknown;
 			FirstHitIndex = -1;
 			ShootingRight = true;
+			EmptyCellsSize = -1;
+			EmptyCells = 0;
 		}
-		
+		~SeaBattleBot(){
+			if (EmptyCells != 0)
+				delete[] EmptyCells;
+		}
 	//Изменение данных бота
 	private:
 		void ResetAboutShipInfo(){	//Сбросить всю информацию по найденному кораблю
@@ -1244,6 +1251,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 				ef_rows = new_rows;
 			else
 				ef_rows = GetRows();
+			EmptyCellsSize = -1;
 		}
 		void ResetBot(int cols_ = -1, int rows_ = -1){	//Сбросить всю игровую информацию бота
 			SetBotFieldSize(cols_, rows_);
@@ -1301,6 +1309,35 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 	
 	//Определение координаты для уничтожения корабля
 	private:
+		void InitializeEmptyCells(const SeaBattleField &enemy_field){
+			int sum = 0;
+			if (EmptyCells != 0)
+				delete[] EmptyCells;
+			EmptyCells = new int[ef_cols * ef_rows];
+			for(int i = 0; i < ef_cols * ef_rows; i++){
+				if (CheckCell(enemy_field, i) == 0){
+					EmptyCells[sum] = i;
+					sum++;
+				}
+			}
+			EmptyCellsSize = sum;
+		}
+//		void PrintArray(){
+//			cout << "В массиве: ";
+//			for(int i = 0; i < EmptyCellsSize; i++)
+//				printf("%d ", EmptyCells[i]);
+//			cout << endl;
+//		}
+		void DeleteEmptyCellsByIndex(int index_of_empty_cell){
+			int i = 0;
+			for(; i < index_of_empty_cell + 1; i++){
+				if (EmptyCells[i] == index_of_empty_cell)
+					break;
+			}
+			for(; i < EmptyCellsSize - 1; i++)
+				EmptyCells[i] = EmptyCells[i + 1];
+			EmptyCellsSize--;
+		}
 		void ReverseShootingSide(){	//Развернуть уничтожение корабля на противоположную сторону
 			if (ShootingRight)
 				solution = (Rotation == Vertical ? FirstHitIndex - ef_cols : FirstHitIndex - 1);	//Выстрелить левее (выше) первой найденной клетки
@@ -1375,6 +1412,8 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 	public:
 		void ShotByBot(const SeaBattleField &enemy_field, int *x, int *y){ //Вычисления для хода, куда бот будет стрелять; В x и y будут записаны координаты для выстрела;
 			int temp = 0, temp2;
+			if (EmptyCellsSize = -1)
+				InitializeEmptyCells(enemy_field);
 			LastShotResult = enemy_field.CheckLastMove();	//0 - ходы отсутствуют; 1 - был выстрел по SHOT, STRIKE, KILL; 2 - было попадание в SHIP; 3 - был подрыв корабля; 4 - был выстрел по EMPTY; 5 - была установка корабля;
 			switch(LastShotResult){	//Результат его последнего хода
 				case 2:	//Попал в клетку корабля
@@ -1390,6 +1429,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 						State = Searching;
 						FirstHitIndex = -1;
 					}
+					InitializeEmptyCells(enemy_field);
 					break;
 				/*
 				case 4:	//Попал по пустой клетке
@@ -1406,6 +1446,11 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 				case Searching:	//Поиск какого-либо корабля
 					
 					srand(clock());
+					solution = EmptyCells[rand() % EmptyCellsSize];
+					
+					
+					
+					/*
 					temp = ((unsigned int)rand()) % ef_cols;
 					//srand(clock() + 1);
 					srand(clock() * 3 + 5);
@@ -1417,6 +1462,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 						if (CheckCell(enemy_field, solution) == 0)	//Чтобы выстрелить в пустую клетку
 							break;
 					}
+					*/
 					break;
 				case Destruction:	//Уничтожение найденного корабля
 					if (Rotation == Unknown){	//Попытка узнать направление корабля
@@ -1439,6 +1485,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 						solution = (Rotation == Horizontal ? temp2 * ef_cols + solution : solution);
 					break;
 			}
+			DeleteEmptyCellsByIndex(solution);
 			RecordBotMoveData(x, y);
 		}
 	
@@ -1485,6 +1532,7 @@ class SeaBattleBot : public SeaBattleGame{ //Класс со всей логикой бота для игры
 			
 			Rotation = (ShipRotation)temp;
 			ShootingRight = (bool)shr;
+			EmptyCellsSize = -1;
 			return 0;
 		}
 	private:
@@ -2663,6 +2711,17 @@ int main() {
 	
 	SeaBattleGameMenu menu;
     menu.Run();
+//    SeaBattleGame a;
+//    SeaBattleBot b;
+//    int x, y;
+//    a.SetShipsRandomly();
+//    for(int i = 0; i < 60; i++){
+//    	a.DrawFields(b);
+//    	b.ShotByBot(a, &x, &y);
+//    	printf("Бот выстрелил в %d %d\n", y, x);
+//    	b.PrintArray();
+//    	a.ShotTo(x, y);
+//	}
     
 	return 0;
 }
